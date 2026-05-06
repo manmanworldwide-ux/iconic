@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import StatCard from "@/components/dashboard/StatCard";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Payments — Iconic Dashboard" };
+export const metadata: Metadata = { title: "Payments" };
 
 function fmt(n: number) { return `€${Math.round(n).toLocaleString("en-US")}`; }
 
@@ -12,14 +12,13 @@ export default async function PaymentsPage() {
   const { data: rows = [] } = await supabase
     .from("payments")
     .select("*")
-    .order("year", { ascending: false });
+    .order("created_at", { ascending: false });
 
   const all = rows ?? [];
-  const totalEuro   = all.reduce((a, r) => a + (Number(r.total_euro) || 0), 0);
-  const orenTotal   = all.reduce((a, r) => a + (Number(r.oren) || 0), 0);
-  const enolTotal   = all.reduce((a, r) => a + (Number(r.enol) || 0), 0);
+  const totalEuro = all.reduce((a, r) => a + (Number(r.total_euro) || 0), 0);
+  const orenTotal = all.reduce((a, r) => a + (Number(r.oren) || 0), 0);
+  const enolTotal = all.reduce((a, r) => a + (Number(r.enol) || 0), 0);
 
-  // Payment method breakdown
   const methods: Record<string, number> = {};
   for (const r of all) {
     const m = (r.paid_via || "Unknown").trim();
@@ -27,112 +26,78 @@ export default async function PaymentsPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-        <p className="text-sm text-gray-500">Deal payments log — Terrace</p>
+    <div className="px-4 py-5 lg:px-8 lg:py-8">
+      <div className="mb-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-brand-500">Finance</p>
+        <h1 className="text-xl font-bold text-gray-900 lg:text-2xl">Payments</h1>
+        <p className="text-xs text-gray-400">Deal payment log — Terrace</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label="Total Payments"   value={fmt(totalEuro)}  icon="💶" />
-        <StatCard label="To Oren"          value={fmt(orenTotal)}  icon="👤" sub={`${totalEuro > 0 ? ((orenTotal/totalEuro)*100).toFixed(0) : 0}%`} />
-        <StatCard label="To Enol"          value={fmt(enolTotal)}  icon="👤" sub={`${totalEuro > 0 ? ((enolTotal/totalEuro)*100).toFixed(0) : 0}%`} />
-        <StatCard label="Transactions"     value={String(all.length)} icon="🧾" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4 mb-5">
+        <StatCard label="Total"        value={fmt(totalEuro)} icon="💶" />
+        <StatCard label="To Oren"      value={fmt(orenTotal)} sub={`${totalEuro>0?((orenTotal/totalEuro)*100).toFixed(0):0}%`} icon="👤" />
+        <StatCard label="To Enol"      value={fmt(enolTotal)} sub={`${totalEuro>0?((enolTotal/totalEuro)*100).toFixed(0):0}%`} icon="👤" />
+        <StatCard label="Transactions" value={String(all.length)} icon="🧾" />
       </div>
 
-      {/* Payment method summary */}
-      <div className="grid gap-6 lg:grid-cols-3 mb-6">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">By Payment Method</h2>
-          <div className="space-y-3">
-            {Object.entries(methods).sort(([,a],[,b]) => b - a).map(([method, amount]) => (
-              <div key={method}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-gray-600">{method}</span>
-                  <span className="font-semibold text-gray-900">{fmt(amount)}</span>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-gray-100">
-                  <div
-                    className="h-1.5 rounded-full bg-brand-500"
-                    style={{ width: `${totalEuro > 0 ? (amount / totalEuro) * 100 : 0}%` }}
-                  />
-                </div>
+      {/* Payment method bars */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm mb-4">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">By Method</p>
+        <div className="space-y-3">
+          {Object.entries(methods).sort(([,a],[,b]) => b-a).map(([method, amount]) => (
+            <div key={method}>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-600 font-medium">{method}</span>
+                <span className="font-bold text-gray-900">{fmt(amount)}</span>
               </div>
-            ))}
-          </div>
+              <div className="h-2 w-full rounded-full bg-gray-100">
+                <div className="h-2 rounded-full bg-brand-500"
+                  style={{ width: `${totalEuro > 0 ? (amount/totalEuro)*100 : 0}%` }} />
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* Partner balance */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Partner Distribution</h2>
-          <div className="space-y-4">
-            {[
-              { name: "Oren",  amount: orenTotal,  color: "bg-emerald-500" },
-              { name: "Enol",  amount: enolTotal,  color: "bg-violet-500"  },
-            ].map((p) => (
-              <div key={p.name}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium text-gray-700">{p.name}</span>
-                  <span className="font-bold text-gray-900">{fmt(p.amount)}</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-gray-100">
-                  <div
-                    className={`h-2 rounded-full ${p.color}`}
-                    style={{ width: `${totalEuro > 0 ? (p.amount / totalEuro) * 100 : 0}%` }}
-                  />
-                </div>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {totalEuro > 0 ? ((p.amount / totalEuro) * 100).toFixed(1) : 0}%
+      {/* Partner split */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm mb-4">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Partner Split</p>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { name: "Oren", amount: orenTotal, color: "bg-emerald-500", text: "text-emerald-600" },
+            { name: "Enol", amount: enolTotal, color: "bg-violet-500",  text: "text-violet-600"  },
+          ].map((p) => (
+            <div key={p.name} className="rounded-xl bg-gray-50 p-3 text-center">
+              <p className={`text-2xl font-black ${p.text}`}>{fmt(p.amount)}</p>
+              <p className="text-xs text-gray-500 mt-0.5">{p.name}</p>
+              <p className="text-[10px] text-gray-400">{totalEuro>0?((p.amount/totalEuro)*100).toFixed(1):0}%</p>
+              <div className="mt-2 h-1.5 w-full rounded-full bg-gray-200">
+                <div className={`h-1.5 rounded-full ${p.color}`}
+                  style={{ width: `${totalEuro>0?(p.amount/totalEuro)*100:0}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Transaction list */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Transactions</p>
+        <div className="space-y-2">
+          {all.map((r, i) => (
+            <div key={i} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2.5">
+              <div>
+                <p className="text-sm font-medium text-gray-800">
+                  {r.month} {r.day}, {r.year}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {r.paid_via} · {r.currency}
+                  {r.comment ? ` · ${r.comment}` : ""}
                 </p>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Placeholder for additional analysis */}
-        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-5 flex items-center justify-center">
-          <p className="text-sm text-gray-400 text-center">More payment analysis coming soon</p>
-        </div>
-      </div>
-
-      {/* Full payment log */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-700 mb-4">Payment Log</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-100 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">
-                <th className="pb-2 pr-4">Year</th>
-                <th className="pb-2 pr-4">Month</th>
-                <th className="pb-2 pr-4">Day</th>
-                <th className="pb-2 pr-4">Currency</th>
-                <th className="pb-2 pr-4">Method</th>
-                <th className="pb-2 pr-4 text-right">Total €</th>
-                <th className="pb-2 pr-4 text-right">Oren</th>
-                <th className="pb-2 pr-4 text-right">Enol</th>
-                <th className="pb-2">Comment</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {all.map((r, i) => (
-                <tr key={i} className="hover:bg-gray-50">
-                  <td className="py-2 pr-4 text-gray-600">{r.year}</td>
-                  <td className="py-2 pr-4 text-gray-600">{r.month}</td>
-                  <td className="py-2 pr-4 text-gray-600">{r.day}</td>
-                  <td className="py-2 pr-4 text-gray-600">{r.currency}</td>
-                  <td className="py-2 pr-4">
-                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-                      {r.paid_via || "—"}
-                    </span>
-                  </td>
-                  <td className="py-2 pr-4 text-right font-semibold text-gray-900">{Number(r.total_euro) > 0 ? fmt(Number(r.total_euro)) : "—"}</td>
-                  <td className="py-2 pr-4 text-right text-emerald-700">{Number(r.oren) > 0 ? fmt(Number(r.oren)) : "—"}</td>
-                  <td className="py-2 pr-4 text-right text-violet-700">{Number(r.enol) > 0 ? fmt(Number(r.enol)) : "—"}</td>
-                  <td className="py-2 text-gray-500 text-xs">{r.comment || "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              <p className="text-sm font-bold text-gray-900 ml-3 shrink-0">{fmt(Number(r.total_euro))}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>

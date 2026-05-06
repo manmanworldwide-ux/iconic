@@ -1,45 +1,45 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Navbar from "@/components/Navbar";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#030712",
+};
 
 export const metadata: Metadata = {
-  title: {
-    default: "Iconic — Modern SaaS Template",
-    template: "%s | Iconic",
+  title: { default: "ICONIC Group", template: "%s | ICONIC" },
+  description: "ICONIC Group property management dashboard",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ICONIC",
   },
-  description:
-    "A production-ready SaaS template built with Next.js, Supabase, TypeScript, and Tailwind CSS.",
+  formatDetection: { telephone: false },
   openGraph: {
-    title: "Iconic — Modern SaaS Template",
-    description: "Production-ready SaaS template with auth, dashboard, and more.",
+    title: "ICONIC Group",
+    description: "Property management dashboard",
     type: "website",
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="scroll-smooth">
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
-        <Navbar />
-        <main className="min-h-[calc(100vh-4rem)]">{children}</main>
-        <footer className="border-t border-gray-200 bg-white py-8 text-center text-sm text-gray-500">
-          © {new Date().getFullYear()} Iconic. Built with Next.js, Supabase &amp; Tailwind CSS.
-        </footer>
+        {children}
       </body>
     </html>
   );
